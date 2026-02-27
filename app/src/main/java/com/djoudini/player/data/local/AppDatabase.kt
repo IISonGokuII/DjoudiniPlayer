@@ -16,5 +16,6 @@ import androidx.room.RoomDatabase
     exportSchema = false
 )
 abstract class AppDatabase : RoomDatabase() {
-    // Daos will be added here
+    abstract fun watchProgressDao(): WatchProgressDao
+    abstract fun vodDao(): VodDao
 }

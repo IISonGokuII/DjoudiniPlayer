@@ -23,4 +23,10 @@ object DatabaseModule {
             "djoudini_player.db"
         ).build()
     }
+
+    @Provides
+    fun provideWatchProgressDao(database: AppDatabase) = database.watchProgressDao()
+
+    @Provides
+    fun provideVodDao(database: AppDatabase) = database.vodDao()
 }
