@@ -3,7 +3,7 @@ package com.djoudini.player
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import com.djoudini.player.ui.dashboard.DashboardScreen
+import com.djoudini.player.ui.navigation.AppNavigation
 import com.djoudini.player.ui.theme.DjoudiniTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             DjoudiniTheme {
-                DashboardScreen()
+                AppNavigation()
             }
         }
     }

@@ -1,5 +1,6 @@
 package com.djoudini.player.ui.dashboard
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -12,6 +13,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -35,7 +37,11 @@ class DashboardViewModel @Inject constructor(
 
 @Composable
 fun DashboardScreen(
-    viewModel: DashboardViewModel = hiltViewModel()
+    viewModel: DashboardViewModel = hiltViewModel(),
+    onNavigateToLive: () -> Unit,
+    onNavigateToVod: () -> Unit,
+    onNavigateToSeries: () -> Unit,
+    onNavigateToSettings: () -> Unit
 ) {
     val syncProgress by viewModel.syncProgress.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
@@ -43,6 +49,7 @@ fun DashboardScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .background(Color(0xFF0F0F0F))
             .padding(24.dp)
     ) {
         HeaderSection(expirationDate = "2026-12-31")
@@ -62,28 +69,28 @@ fun DashboardScreen(
                     icon = Icons.Default.LiveTv,
                     progress = if (isSyncing) syncProgress else 0f,
                     isSyncing = isSyncing,
-                    onClick = { /* Navigate to Live */ }
+                    onClick = onNavigateToLive
                 )
             }
             item {
                 DashboardTile(
                     title = "VOD",
                     icon = Icons.Default.Movie,
-                    onClick = { /* Navigate to VOD */ }
+                    onClick = onNavigateToVod
                 )
             }
             item {
                 DashboardTile(
                     title = "Series",
                     icon = Icons.Default.Tv,
-                    onClick = { /* Navigate to Series */ }
+                    onClick = onNavigateToSeries
                 )
             }
             item {
                 DashboardTile(
                     title = "Settings",
                     icon = Icons.Default.Settings,
-                    onClick = { /* Navigate to Settings */ }
+                    onClick = onNavigateToSettings
                 )
             }
         }
@@ -94,9 +101,10 @@ fun DashboardScreen(
 fun HeaderSection(expirationDate: String) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = "DJOUDINI PLAYER",
                 style = MaterialTheme.typography.headlineMedium.copy(
@@ -113,9 +121,10 @@ fun HeaderSection(expirationDate: String) {
         }
 
         Card(
+            modifier = Modifier.wrapContentWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.DarkGray.copy(alpha = 0.5f))
         ) {
-            Column(modifier = Modifier.padding(8.dp)) {
+            Column(modifier = Modifier.padding(12.dp)) {
                 Text(
                     text = "Ablaufdatum:",
                     style = MaterialTheme.typography.labelSmall,
