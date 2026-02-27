@@ -14,6 +14,7 @@
         android:label="DjoudiniPlayer"
         android:banner="@drawable/tv_banner"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="true"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
         <activity
             android:name=".MainActivity"
