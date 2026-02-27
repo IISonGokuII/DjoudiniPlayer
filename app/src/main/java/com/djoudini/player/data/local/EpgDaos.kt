@@ -4,28 +4,21 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
+import androidx.room.Transaction
 import kotlinx.coroutines.flow.Flow
+
+data class ChannelWithPrograms(
+    @androidx.room.Embedded
+    val channel: ChannelEntity,
+    @androidx.room.Relation(
+        parentColumn = "id",
+        entityColumn = "channel_id"
+    )
+    val programs: List<EpgProgramEntity>
+)
 
 @Dao
 interface EpgDao {
-
-    @Query("""
-        SELECT * FROM epg_programs 
-        WHERE channel_id = :channelId 
-        AND end_time > :currentTime 
-        ORDER BY start_time ASC
-    """)
-    fun getUpcomingPrograms(channelId: Long, currentTime: Long): Flow<List<EpgProgramEntity>>
-
-    @Query("""
-        SELECT * FROM epg_programs 
-        WHERE channel_id = :channelId 
-        AND start_time <= :currentTime 
-        AND end_time >= :currentTime 
-        LIMIT 1
-    """)
-    suspend fun getCurrentProgram(channelId: Long, currentTime: Long): EpgProgramEntity?
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertPrograms(programs: List<EpgProgramEntity>)
 
@@ -35,12 +28,10 @@ interface EpgDao {
 
 @Dao
 interface ChannelDao {
-    @Query("SELECT * FROM channels WHERE category_id = :categoryId")
-    fun getChannelsByCategory(categoryId: Long): Flow<List<ChannelEntity>>
-
-    @Query("SELECT * FROM channels")
-    fun getAllChannels(): Flow<List<ChannelEntity>>
-    
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insertChannels(channels: List<ChannelEntity>)
+
+    @Transaction
+    @Query("SELECT * FROM channels")
+    fun getChannelsWithPrograms(): Flow<List<ChannelWithPrograms>>
 }

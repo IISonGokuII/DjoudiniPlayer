@@ -39,6 +39,19 @@ data class XtreamCategory(
     val parent_id: Int? = 0
 )
 
+data class XtreamStream(
+    @SerializedName("stream_id")
+    val streamId: Int,
+    @SerializedName("name")
+    val name: String,
+    @SerializedName("stream_icon")
+    val streamIcon: String?,
+    @SerializedName("category_id")
+    val categoryId: String,
+    @SerializedName("epg_channel_id")
+    val epgChannelId: String?
+)
+
 interface XtreamApi {
     @GET
     suspend fun authenticate(@Url url: String): Response<XtreamAuthResponse>
@@ -51,4 +64,7 @@ interface XtreamApi {
 
     @GET
     suspend fun getSeriesCategories(@Url url: String): Response<List<XtreamCategory>>
+
+    @GET
+    suspend fun getLiveStreams(@Url url: String): Response<List<XtreamStream>>
 }

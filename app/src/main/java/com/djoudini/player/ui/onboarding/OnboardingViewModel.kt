@@ -12,6 +12,9 @@ import com.djoudini.player.data.remote.XtreamCategory
 import com.djoudini.player.data.worker.XtreamDataSyncWorker
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -83,18 +86,24 @@ class OnboardingViewModel @Inject constructor(
 
     private suspend fun fetchCategories(baseUrl: String, user: String, pass: String) {
         try {
-            val liveRes = xtreamApi.getLiveCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_live_categories")
-            val vodRes = xtreamApi.getVodCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_vod_categories")
-            val seriesRes = xtreamApi.getSeriesCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_series_categories")
+            coroutineScope {
+                val liveCategoriesDeferred = async { xtreamApi.getLiveCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_live_categories") }
+                val vodCategoriesDeferred = async { xtreamApi.getVodCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_vod_categories") }
+                val seriesCategoriesDeferred = async { xtreamApi.getSeriesCategories("$baseUrl/player_api.php?username=$user&password=$pass&action=get_series_categories") }
 
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    liveCategories = liveRes.body() ?: emptyList(),
-                    vodCategories = vodRes.body() ?: emptyList(),
-                    seriesCategories = seriesRes.body() ?: emptyList(),
-                    currentStep = OnboardingStep.LIVE_CATEGORIES // Move to next step
-                )
+                val liveRes = liveCategoriesDeferred.await()
+                val vodRes = vodCategoriesDeferred.await()
+                val seriesRes = seriesCategoriesDeferred.await()
+
+                _uiState.update {
+                    it.copy(
+                        isLoading = false,
+                        liveCategories = liveRes.body() ?: emptyList(),
+                        vodCategories = vodRes.body() ?: emptyList(),
+                        seriesCategories = seriesRes.body() ?: emptyList(),
+                        currentStep = OnboardingStep.LIVE_CATEGORIES
+                    )
+                }
             }
         } catch (e: Exception) {
             _uiState.update { it.copy(isLoading = false, error = "Failed to fetch categories.") }

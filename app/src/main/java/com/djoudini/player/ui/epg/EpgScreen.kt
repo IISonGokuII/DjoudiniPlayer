@@ -51,7 +51,7 @@ fun EpgScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
-        } else if (state.channels.isEmpty()) {
+        } else if (state.channelsWithPrograms.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = "No channels found.\n\nThe background sync might still be in progress, or no Live TV categories were selected.",
@@ -64,11 +64,11 @@ fun EpgScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(state.channels) { channel ->
+                items(state.channelsWithPrograms) { channelWithPrograms ->
                     EpgChannelRow(
-                        channel = channel,
-                        programs = state.programsByChannel[channel.id] ?: emptyList(),
-                        onChannelClick = { onChannelClick(channel) }
+                        channel = channelWithPrograms.channel,
+                        programs = channelWithPrograms.programs,
+                        onChannelClick = { onChannelClick(channelWithPrograms.channel) }
                     )
                 }
             }

@@ -12,24 +12,9 @@ import com.djoudini.player.data.remote.XtreamApi
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.withContext
-import com.google.gson.annotations.SerializedName
-import com.google.gson.Gson
-import retrofit2.Response
-
-// Define a generic stream class as the API response is not a direct list
-data class XtreamStream(
-    @SerializedName("stream_id")
-    val streamId: Int,
-    @SerializedName("name")
-    val name: String,
-    @SerializedName("stream_icon")
-    val streamIcon: String?,
-    @SerializedName("category_id")
-    val categoryId: String,
-    @SerializedName("epg_channel_id")
-    val epgChannelId: String?
-)
 
 @HiltWorker
 class XtreamDataSyncWorker @AssistedInject constructor(
@@ -49,38 +34,44 @@ class XtreamDataSyncWorker @AssistedInject constructor(
             val pass = account["pass"] ?: return@withContext Result.failure()
             
             val selectedLiveCategories = preferencesManager.getSelectedLiveCategories()
-            Log.d("XtreamDataSyncWorker", "Syncing Live TV for categories: $selectedLiveCategories")
-
             if (selectedLiveCategories.isEmpty()) {
                 Log.d("XtreamDataSyncWorker", "No live categories selected, sync complete.")
                 return@withContext Result.success()
             }
             
-            // Note: For VOD/Series, you would have separate getVodStreams, getSeriesStreams calls
             val allChannels = mutableListOf<ChannelEntity>()
 
-            selectedLiveCategories.forEach { categoryId ->
-                val url = "$server/player_api.php?username=$user&password=$pass&action=get_live_streams&category_id=$categoryId"
-                try {
-                    val response = xtreamApi.getLiveCategories(url) // Re-using this for now; needs a proper response model
-                    if (response.isSuccessful && response.body() != null) {
-                         // This is a placeholder as the API response is not a direct list
-                         // We will simulate a successful response with one channel for each category
-                         val channel = ChannelEntity(
-                            categoryId = categoryId.toLongOrNull() ?: 0,
-                            name = "Channel for Cat $categoryId",
-                            logo = null,
-                            streamUrl = "http://dummy.stream.url/live.m3u8",
-                            streamId = "stream_$categoryId",
-                            epgId = "epg_$categoryId"
-                        )
-                        allChannels.add(channel)
-                    } else {
-                        Log.e("XtreamDataSyncWorker", "API error for category $categoryId: ${response.code()} - ${response.errorBody()?.string()}")
+            // Parallel fetching of streams for each category
+            val streamJobs = selectedLiveCategories.map { categoryId ->
+                async {
+                    val url = "$server/player_api.php?username=$user&password=$pass&action=get_live_streams&category_id=$categoryId"
+                    try {
+                        val response = xtreamApi.getLiveStreams(url)
+                        if (response.isSuccessful) {
+                            response.body()?.map { stream ->
+                                ChannelEntity(
+                                    categoryId = stream.categoryId.toLongOrNull() ?: 0L,
+                                    name = stream.name,
+                                    logo = stream.streamIcon,
+                                    streamUrl = "$server/live/$user/$pass/${stream.streamId}.m3u8",
+                                    streamId = stream.streamId.toString(),
+                                    epgId = stream.epgChannelId
+                                )
+                            }
+                        } else {
+                            Log.e("XtreamDataSyncWorker", "API error for category $categoryId: ${response.code()}")
+                            null
+                        }
+                    } catch (e: Exception) {
+                        Log.e("XtreamDataSyncWorker", "Exception syncing category $categoryId", e)
+                        null
                     }
-                } catch (e: Exception) {
-                     Log.e("XtreamDataSyncWorker", "Exception syncing category $categoryId", e)
                 }
+            }
+            
+            // Collect all results
+            streamJobs.awaitAll().forEach { channelList ->
+                channelList?.let { allChannels.addAll(it) }
             }
             
             if (allChannels.isNotEmpty()) {
