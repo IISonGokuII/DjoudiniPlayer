@@ -24,24 +24,9 @@ fun OnboardingScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     
-    // Login Data
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var serverUrl by remember { mutableStateOf("") }
-
-    // Category Selection Data
     val selectedLive = remember { mutableStateListOf<String>() }
     val selectedVod = remember { mutableStateListOf<String>() }
     val selectedSeries = remember { mutableStateListOf<String>() }
-    
-    // Auto-select all categories initially when they load
-    LaunchedEffect(uiState.isAuthenticated) {
-        if (uiState.isAuthenticated) {
-            selectedLive.addAll(uiState.liveCategories.map { it.category_id })
-            selectedVod.addAll(uiState.vodCategories.map { it.category_id })
-            selectedSeries.addAll(uiState.seriesCategories.map { it.category_id })
-        }
-    }
 
     Box(
         modifier = Modifier
@@ -50,218 +35,132 @@ fun OnboardingScreen(
         contentAlignment = Alignment.Center
     ) {
         Card(
-            modifier = Modifier.padding(24.dp).widthIn(max = 600.dp),
+            modifier = Modifier.padding(24.dp).widthIn(max = 600.dp).fillMaxHeight(0.8f),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(16.dp),
-            elevation = CardDefaults.cardElevation(8.dp)
+            shape = RoundedCornerShape(16.dp)
         ) {
-            Column(
-                modifier = Modifier.padding(32.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (!uiState.isAuthenticated) {
-                    Text(
-                        text = "Welcome to Djoudini Player",
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+            when (uiState.currentStep) {
+                OnboardingStep.LOGIN -> LoginStep(viewModel)
+                
+                OnboardingStep.LIVE_CATEGORIES -> CategorySelectionStep(
+                    title = "Live TV Categories",
+                    categories = uiState.liveCategories,
+                    selectedIds = selectedLive,
+                    onNextClicked = { viewModel.nextStep() }
+                )
+                
+                OnboardingStep.VOD_CATEGORIES -> CategorySelectionStep(
+                    title = "VOD (Movies) Categories",
+                    categories = uiState.vodCategories,
+                    selectedIds = selectedVod,
+                    onNextClicked = { viewModel.nextStep() }
+                )
 
-                    Text(
-                        text = "Enter your Xtream Codes API details",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.LightGray
-                    )
-
-                    if (uiState.error != null) {
-                        Text(
-                            text = uiState.error!!,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.labelMedium
+                OnboardingStep.SERIES_CATEGORIES -> CategorySelectionStep(
+                    title = "Series Categories",
+                    categories = uiState.seriesCategories,
+                    selectedIds = selectedSeries,
+                    isFinalStep = true,
+                    onNextClicked = {
+                        viewModel.completeOnboarding(
+                            selectedLive.toList(),
+                            selectedVod.toList(),
+                            selectedSeries.toList()
                         )
+                        onLoginSuccess()
                     }
-
-                    OutlinedTextField(
-                        value = serverUrl,
-                        onValueChange = { serverUrl = it },
-                        label = { Text("Server URL (http://domain:port)") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = username,
-                        onValueChange = { username = it },
-                        label = { Text("Username") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-
-                    OutlinedTextField(
-                        value = password,
-                        onValueChange = { password = it },
-                        label = { Text("Password") },
-                        visualTransformation = PasswordVisualTransformation(),
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            if (serverUrl.isNotEmpty() && username.isNotEmpty() && password.isNotEmpty()) {
-                                viewModel.authenticate(serverUrl, username, password)
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        enabled = !uiState.isLoading
-                    ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(color = Color.Black, modifier = Modifier.size(24.dp))
-                        } else {
-                            Text(
-                                text = "Login",
-                                color = Color.Black,
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 16.sp
-                            )
-                        }
-                    }
-                } else {
-                    Text(
-                        text = "Choose Categories",
-                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    Text(
-                        text = "Select what you want to load to save memory and speed up the app.",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.LightGray
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Categories List
-                    LazyColumn(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f) // Takes up available space
-                    ) {
-                        if (uiState.liveCategories.isNotEmpty()) {
-                            item { CategoryHeader("Live TV") }
-                            items(uiState.liveCategories) { category ->
-                                CategoryCheckbox(
-                                    category = category,
-                                    isChecked = selectedLive.contains(category.category_id),
-                                    onCheckedChange = { checked ->
-                                        if (checked) selectedLive.add(category.category_id)
-                                        else selectedLive.remove(category.category_id)
-                                    }
-                                )
-                            }
-                        }
-
-                        if (uiState.vodCategories.isNotEmpty()) {
-                            item { CategoryHeader("VOD (Movies)") }
-                            items(uiState.vodCategories) { category ->
-                                CategoryCheckbox(
-                                    category = category,
-                                    isChecked = selectedVod.contains(category.category_id),
-                                    onCheckedChange = { checked ->
-                                        if (checked) selectedVod.add(category.category_id)
-                                        else selectedVod.remove(category.category_id)
-                                    }
-                                )
-                            }
-                        }
-
-                        if (uiState.seriesCategories.isNotEmpty()) {
-                            item { CategoryHeader("Series") }
-                            items(uiState.seriesCategories) { category ->
-                                CategoryCheckbox(
-                                    category = category,
-                                    isChecked = selectedSeries.contains(category.category_id),
-                                    onCheckedChange = { checked ->
-                                        if (checked) selectedSeries.add(category.category_id)
-                                        else selectedSeries.remove(category.category_id)
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = {
-                            viewModel.completeOnboarding(
-                                selectedLive.toList(),
-                                selectedVod.toList(),
-                                selectedSeries.toList()
-                            )
-                            onLoginSuccess()
-                        },
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                        enabled = selectedLive.isNotEmpty() || selectedVod.isNotEmpty() || selectedSeries.isNotEmpty()
-                    ) {
-                        Text(
-                            text = "Start App",
-                            color = Color.Black,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
-                        )
-                    }
-                }
+                )
             }
         }
     }
 }
 
 @Composable
-fun CategoryHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
-        color = MaterialTheme.colorScheme.primary,
-        modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp)
-    )
+fun LoginStep(viewModel: OnboardingViewModel) {
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var serverUrl by remember { mutableStateOf("") }
+    val uiState by viewModel.uiState.collectAsState()
+
+    Column(
+        modifier = Modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text("Welcome to Djoudini Player", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(8.dp))
+        Text("Enter your Xtream Codes API details", style = MaterialTheme.typography.bodyMedium, color = Color.LightGray)
+        
+        if (uiState.error != null) {
+            Text(uiState.error!!, color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.labelMedium)
+        }
+
+        OutlinedTextField(value = serverUrl, onValueChange = { serverUrl = it }, label = { Text("Server URL (http://domain:port)") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = username, onValueChange = { username = it }, label = { Text("Username") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(value = password, onValueChange = { password = it }, label = { Text("Password") }, visualTransformation = PasswordVisualTransformation(), modifier = Modifier.fillMaxWidth())
+        
+        Spacer(Modifier.height(16.dp))
+
+        Button(
+            onClick = { viewModel.authenticate(serverUrl, username, password) },
+            enabled = !uiState.isLoading,
+            modifier = Modifier.fillMaxWidth().height(50.dp)
+        ) {
+            if (uiState.isLoading) CircularProgressIndicator(modifier = Modifier.size(24.dp)) else Text("Login")
+        }
+    }
 }
 
 @Composable
-fun CategoryCheckbox(
-    category: XtreamCategory,
-    isChecked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+fun CategorySelectionStep(
+    title: String,
+    categories: List<XtreamCategory>,
+    selectedIds: MutableList<String>,
+    isFinalStep: Boolean = false,
+    onNextClicked: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp),
-        verticalAlignment = Alignment.CenterVertically
+    LaunchedEffect(categories) {
+        selectedIds.clear()
+        selectedIds.addAll(categories.map { it.category_id })
+    }
+
+    Column(
+        modifier = Modifier.padding(32.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Checkbox(
-            checked = isChecked,
-            onCheckedChange = onCheckedChange,
-            colors = CheckboxDefaults.colors(checkedColor = MaterialTheme.colorScheme.primary)
-        )
-        Text(text = category.category_name, color = Color.White)
+        Text(title, style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
+        Spacer(Modifier.height(8.dp))
+        
+        Row {
+            Button(onClick = {
+                selectedIds.clear()
+                selectedIds.addAll(categories.map { it.category_id })
+            }) { Text("Select All") }
+            Spacer(Modifier.width(8.dp))
+            Button(onClick = { selectedIds.clear() }) { Text("Deselect All") }
+        }
+
+        LazyColumn(modifier = Modifier.weight(1f).padding(vertical = 16.dp)) {
+            items(categories) { category ->
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = selectedIds.contains(category.category_id),
+                        onCheckedChange = { isChecked ->
+                            if (isChecked) selectedIds.add(category.category_id)
+                            else selectedIds.remove(category.category_id)
+                        }
+                    )
+                    Text(category.category_name)
+                }
+            }
+        }
+        
+        Button(
+            onClick = onNextClicked,
+            enabled = selectedIds.isNotEmpty(),
+            modifier = Modifier.fillMaxWidth().height(50.dp)
+        ) {
+            Text(if (isFinalStep) "Start App" else "Next")
+        }
     }
 }

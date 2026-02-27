@@ -17,6 +17,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -33,33 +34,43 @@ fun EpgScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
 
-    if (state.isLoading) {
-        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
-        }
-    } else {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color(0xFF0F0F0F))
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            item {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF0F0F0F))
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Programmzeitschrift (EPG)",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+
+        if (state.isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
+            }
+        } else if (state.channels.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    text = "Programmzeitschrift (EPG)",
-                    style = MaterialTheme.typography.headlineSmall,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(bottom = 16.dp)
+                    text = "No channels found.\n\nThe background sync might still be in progress, or no Live TV categories were selected.",
+                    color = Color.White,
+                    textAlign = TextAlign.Center
                 )
             }
-
-            items(state.channels) { channel ->
-                EpgChannelRow(
-                    channel = channel,
-                    programs = state.programsByChannel[channel.id] ?: emptyList(),
-                    onChannelClick = { onChannelClick(channel) }
-                )
+        } else {
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(state.channels) { channel ->
+                    EpgChannelRow(
+                        channel = channel,
+                        programs = state.programsByChannel[channel.id] ?: emptyList(),
+                        onChannelClick = { onChannelClick(channel) }
+                    )
+                }
             }
         }
     }
@@ -77,7 +88,6 @@ fun EpgChannelRow(
             .height(80.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Channel Logo / Name Box
         Surface(
             modifier = Modifier
                 .width(120.dp)
@@ -99,7 +109,6 @@ fun EpgChannelRow(
 
         Spacer(modifier = Modifier.width(8.dp))
 
-        // Programs Row
         LazyRow(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -117,7 +126,6 @@ fun EpgProgramItem(program: EpgProgramEntity) {
     val timeFormat = SimpleDateFormat("HH:mm", Locale.getDefault())
     val durationMin = ((program.endTime - program.startTime) / (1000 * 60)).toInt()
     
-    // Width proportional to duration (e.g., 3dp per minute)
     val itemWidth = durationMin.coerceAtLeast(50) * 3
 
     Surface(

@@ -3,17 +3,23 @@ package com.djoudini.player.data.remote
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Url
+import com.google.gson.annotations.SerializedName
 
 data class XtreamAuthResponse(
-    val user_info: UserInfo?,
-    val server_info: ServerInfo?
+    @SerializedName("user_info")
+    val userInfo: UserInfo?,
+    @SerializedName("server_info")
+    val serverInfo: ServerInfo?
 )
 
 data class UserInfo(
     val username: String?,
-    val exp_date: String?,
-    val active_cons: String?,
-    val max_connections: String?
+    @SerializedName("exp_date")
+    val expDate: String?,
+    @SerializedName("active_cons")
+    val activeCons: String?,
+    @SerializedName("max_connections")
+    val maxConnections: String?
 )
 
 data class ServerInfo(
@@ -26,7 +32,9 @@ data class ServerInfo(
 )
 
 data class XtreamCategory(
+    @SerializedName("category_id")
     val category_id: String,
+    @SerializedName("category_name")
     val category_name: String,
     val parent_id: Int? = 0
 )

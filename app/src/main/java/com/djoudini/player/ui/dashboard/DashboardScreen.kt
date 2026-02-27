@@ -118,7 +118,7 @@ fun HeaderSection(expirationDate: String) {
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = "DJOUDINI PLAYER",
+                text = "DJOUDINI PLAYER v1.1",
                 style = MaterialTheme.typography.headlineMedium.copy(
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = 2.sp
