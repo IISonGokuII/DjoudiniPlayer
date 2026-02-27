@@ -20,19 +20,30 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.djoudini.player.data.local.PreferencesManager
 import com.djoudini.player.data.repository.PlaylistSyncRepository
 import com.djoudini.player.ui.components.DashboardTile
-import androidx.lifecycle.ViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
 @HiltViewModel
 class DashboardViewModel @Inject constructor(
-    private val syncRepository: PlaylistSyncRepository
+    private val syncRepository: PlaylistSyncRepository,
+    private val preferencesManager: PreferencesManager
 ) : ViewModel() {
     val syncProgress = syncRepository.syncProgress
     val isSyncing = syncRepository.isSyncing
+    
+    val expDate: StateFlow<String> = preferencesManager.expDate.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(5000),
+        initialValue = "Loading..."
+    )
 }
 
 @Composable
@@ -45,6 +56,7 @@ fun DashboardScreen(
 ) {
     val syncProgress by viewModel.syncProgress.collectAsState()
     val isSyncing by viewModel.isSyncing.collectAsState()
+    val expDate by viewModel.expDate.collectAsState()
 
     Column(
         modifier = Modifier
@@ -52,7 +64,7 @@ fun DashboardScreen(
             .background(Color(0xFF0F0F0F))
             .padding(24.dp)
     ) {
-        HeaderSection(expirationDate = "2026-12-31")
+        HeaderSection(expirationDate = expDate)
 
         Spacer(modifier = Modifier.height(32.dp))
 

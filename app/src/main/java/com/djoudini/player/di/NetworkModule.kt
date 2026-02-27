@@ -1,6 +1,7 @@
 package com.djoudini.player.di
 
 import com.djoudini.player.data.remote.TraktApi
+import com.djoudini.player.data.remote.XtreamApi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -35,5 +36,16 @@ object NetworkModule {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(TraktApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideXtreamApi(client: OkHttpClient): XtreamApi {
+        return Retrofit.Builder()
+            .baseUrl("https://dummy.com/") // Replaced dynamically via @Url
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
+            .create(XtreamApi::class.java)
     }
 }

@@ -21,7 +21,7 @@ object DatabaseModule {
             context,
             AppDatabase::class.java,
             "djoudini_player.db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides
