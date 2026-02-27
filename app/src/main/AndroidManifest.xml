@@ -12,6 +12,7 @@
         android:name=".DjoudiniPlayerApplication"
         android:allowBackup="true"
         android:label="DjoudiniPlayer"
+        android:banner="@drawable/tv_banner"
         android:supportsRtl="true"
         android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
         <activity
