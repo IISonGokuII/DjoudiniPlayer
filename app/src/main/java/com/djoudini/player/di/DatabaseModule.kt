@@ -29,4 +29,10 @@ object DatabaseModule {
 
     @Provides
     fun provideVodDao(database: AppDatabase) = database.vodDao()
+
+    @Provides
+    fun provideEpgDao(database: AppDatabase) = database.epgDao()
+
+    @Provides
+    fun provideChannelDao(database: AppDatabase) = database.channelDao()
 }

@@ -18,4 +18,6 @@ import androidx.room.RoomDatabase
 abstract class AppDatabase : RoomDatabase() {
     abstract fun watchProgressDao(): WatchProgressDao
     abstract fun vodDao(): VodDao
+    abstract fun epgDao(): EpgDao
+    abstract fun channelDao(): ChannelDao
 }
