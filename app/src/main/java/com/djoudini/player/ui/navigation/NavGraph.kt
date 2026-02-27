@@ -9,20 +9,23 @@ import com.djoudini.player.ui.dashboard.DashboardScreen
 import com.djoudini.player.ui.epg.EpgScreen
 import com.djoudini.player.ui.onboarding.OnboardingScreen
 import com.djoudini.player.ui.player.PlayerScreen
+import com.djoudini.player.ui.settings.SettingsScreen
 
 sealed class Screen(val route: String) {
     object Onboarding : Screen("onboarding")
     object Dashboard : Screen("dashboard")
     object Epg : Screen("epg")
     object Player : Screen("player")
-    // Add more screens here like Settings, VOD List etc.
+    object Settings : Screen("settings")
 }
 
 @Composable
 fun AppNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Onboarding.route
+    isLoggedIn: Boolean = false
 ) {
+    val startDestination = if (isLoggedIn) Screen.Dashboard.route else Screen.Onboarding.route
+
     NavHost(navController = navController, startDestination = startDestination) {
         
         composable(Screen.Onboarding.route) {
@@ -41,7 +44,7 @@ fun AppNavigation(
                 onNavigateToLive = { navController.navigate(Screen.Epg.route) },
                 onNavigateToVod = { /* Add navigation to VOD list */ },
                 onNavigateToSeries = { /* Add navigation to Series list */ },
-                onNavigateToSettings = { /* Add navigation to Settings */ }
+                onNavigateToSettings = { navController.navigate(Screen.Settings.route) }
             )
         }
         
@@ -57,6 +60,10 @@ fun AppNavigation(
         composable(Screen.Player.route) {
             // For now, playing a dummy stream
             PlayerScreen()
+        }
+
+        composable(Screen.Settings.route) {
+            SettingsScreen()
         }
     }
 }

@@ -67,6 +67,9 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.7.7")
     
+    // DataStore for Preferences
+    implementation("androidx.datastore:datastore-preferences:1.0.0")
+
     // Compose for TV (Android TV / Fire OS)
     val tvComposeVersion = "1.0.0-alpha10"
     implementation("androidx.tv:tv-foundation:$tvComposeVersion")

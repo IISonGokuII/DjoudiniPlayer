@@ -31,23 +31,30 @@ class EpgViewModel @Inject constructor(
     }
 
     private fun loadEpg() {
-        viewModelScope.launch {
-            channelDao.getAllChannels().collect { channels ->
-                val currentTime = System.currentTimeMillis()
-                val programsMap = mutableMapOf<Long, List<EpgProgramEntity>>()
-                
-                // Note: In production, we'd optimize this with a single join query or chunked loading
-                channels.forEach { channel ->
-                    epgDao.getUpcomingPrograms(channel.id, currentTime).first().let { programs ->
-                        programsMap[channel.id] = programs
+        viewModelScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+            try {
+                channelDao.getAllChannels().collect { channels ->
+                    val currentTime = System.currentTimeMillis()
+                    val programsMap = mutableMapOf<Long, List<EpgProgramEntity>>()
+                    
+                    channels.forEach { channel ->
+                        try {
+                            val programs = epgDao.getUpcomingPrograms(channel.id, currentTime).firstOrNull() ?: emptyList()
+                            programsMap[channel.id] = programs
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        }
                     }
-                }
 
-                _uiState.update { it.copy(
-                    channels = channels,
-                    programsByChannel = programsMap,
-                    isLoading = false
-                )}
+                    _uiState.value = EpgState(
+                        channels = channels,
+                        programsByChannel = programsMap,
+                        isLoading = false
+                    )
+                }
+            } catch (e: Exception) {
+                e.printStackTrace()
+                _uiState.value = EpgState(isLoading = false)
             }
         }
     }
